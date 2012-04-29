@@ -59,7 +59,7 @@ function PanoJS(viewer, options) {
   this.viewerZoomedListeners = [];
   // listeners that are notified on a resize event
   this.viewerResizedListeners = [];
-    
+  this.viewerClickListeners   = [];
     
   if (typeof viewer == 'string')
     this.viewer = document.getElementById(viewer);
@@ -84,6 +84,8 @@ function PanoJS(viewer, options) {
   // assign and do some validation on the zoom levels to ensure sanity
   this.zoomLevel = (typeof options.initialZoom == 'undefined' ? -1 : parseInt(options.initialZoom));
   this.maxZoomLevel = (typeof options.maxZoom == 'undefined' ? 0 : Math.abs(parseInt(options.maxZoom)));
+  this.minZoomLevel = 0;
+  if (PanoJS.MIN_ZOOM_LEVEL) this.minZoomLevel = PanoJS.MIN_ZOOM_LEVEL;
   if (this.zoomLevel > this.maxZoomLevel) this.zoomLevel = this.maxZoomLevel;
     
   this.initialPan = (options.initialPan ? options.initialPan : PanoJS.INITIAL_PAN);
@@ -100,7 +102,8 @@ function PanoJS(viewer, options) {
   this.mark = { 'x' : 0, 'y' : 0 };
   this.pressed = false;
   this.tiles = [];
-  
+  this.mousedowntime = 0;
+  this.lastpos = {};
   this.cache = {};
   this.blankTile = options.blankTile ? options.blankTile : PanoJS.BLANK_TILE_IMAGE;
   this.loadingTile = options.loadingTile ? options.loadingTile : PanoJS.LOADING_TILE_IMAGE;      
@@ -150,6 +153,9 @@ PanoJS.CREATE_OSD_CONTROLS = true;
 PanoJS.CREATE_THUMBNAIL_CONTROLS = (isClientPhone() ? false : true);
 PanoJS.CREATE_MAXIMIZE_CONTROLS = true;
 PanoJS.CREATE_ZOOM_CONTROLS = true;
+PanoJS.CREATE_CLICK_CENTER = true;
+
+PanoJS.MIN_IS_FIT_ZOOM = false; // Its overide PanoJS.MIN_ZOOM_LEVEL
 PanoJS.MAX_OVER_ZOOM = 2;
 PanoJS.PRE_CACHE_AMOUNT = 3; // 1 - only visible, 2 - more, 3 - even more
 
@@ -202,7 +208,10 @@ PanoJS.prototype.init = function() {
                 new_level += 1;   
             }
     }
-      
+    if (PanoJS.MIN_IS_FIT_ZOOM)
+    {
+     this.minZoomLevel = this.zoomLevel;
+    }
     // move top level up and to the left so that the image is centered
     var fullWidth = this.tileSize * Math.pow(2, this.zoomLevel);
     var fullHeight = this.tileSize * Math.pow(2, this.zoomLevel);
@@ -261,6 +270,7 @@ PanoJS.prototype.init = function() {
     this.ui_listener = this.surface;
     if (isIE()) this.ui_listener = this.viewer; // issues with IE, hack it
     
+    this.ui_listener.onclick       = callback(this, this.mouseClickHandler);
     this.ui_listener.onmousedown   = callback(this, this.mousePressedHandler);
     this.ui_listener.onmouseup     = callback(this, this.mouseReleasedHandler);
     this.ui_listener.onmouseout    = callback(this, this.mouseReleasedHandler);
@@ -617,7 +627,9 @@ PanoJS.prototype.addViewerZoomedListener = function(listener) {
 PanoJS.prototype.addViewerResizedListener = function(listener) {
     this.viewerResizedListeners.push(listener);
 };  
-    
+PanoJS.prototype.addViewerClickListener = function(listener) {
+    this.viewerClickListeners.push(listener);
+};
 // Notify listeners of a zoom event on the viewer.
 PanoJS.prototype.notifyViewerZoomed = function() {         
     var scale = this.currentScale();
@@ -674,12 +686,14 @@ PanoJS.prototype.notifyViewerMoved = function(coords) {
 
 PanoJS.prototype.zoom = function(direction) {       
     // ensure we are not zooming out of range
-    if (this.zoomLevel + direction < 0) {
+
+    if (this.zoomLevel + direction < this.minZoomLevel) {
       if (PanoJS.MSG_BEYOND_MIN_ZOOM) {
         alert(PanoJS.MSG_BEYOND_MIN_ZOOM);
       }
       return;
     }
+    
     if (this.zoomLevel+direction > this.maxZoomLevel+PanoJS.MAX_OVER_ZOOM) return;
     
     this.blank();
@@ -984,7 +998,6 @@ PanoJS.prototype.blockPropagation = function (e) {
 PanoJS.prototype.mousePressedHandler = function(e) {
   e = e ? e : window.event;
   this.blockPropagation(e);
-    
   // only grab on left-click
   var coords = this.resolveCoordinates(e);
   //if (this.pointExceedsBoundaries(coords))
@@ -994,6 +1007,17 @@ PanoJS.prototype.mousePressedHandler = function(e) {
   return false;
 };
 
+PanoJS.prototype.mouseClickHandler = function(e) {
+  e = e ? e : window.event;
+  this.blockPropagation(e);
+  // only grab on left-click
+  var coords = this.resolveCoordinates(e);
+  //if (this.pointExceedsBoundaries(coords))
+  //this.press(coords);
+
+  // NOTE: MANDATORY! must return false so event does not propagate to well!
+  return false;
+};
 PanoJS.prototype.mouseReleasedHandler = function(e) {
   e = e ? e : window.event;
   if (!this.pressed) return false;
@@ -1015,8 +1039,16 @@ PanoJS.prototype.mouseReleasedHandler = function(e) {
   // move on one click
   if (e.button < 2) {
     //if (!this.pointExceedsBoundaries(coords)) {
+         if (PanoJS.CREATE_CLICK_CENTER) {
          this.resetSlideMotion();
          this.recenter(coords);
+         }
+         // События по клику выполняются в любом случае
+         for (var i = 0; i < this.viewerClickListeners.length; i++)
+         {
+                this.viewerClickListeners[i]( e );
+         }
+         
     //}        
   }
     
