@@ -150,7 +150,6 @@ PanoJS.CREATE_OSD_CONTROLS = true;
 PanoJS.CREATE_THUMBNAIL_CONTROLS = (isClientPhone() ? false : true);
 PanoJS.CREATE_MAXIMIZE_CONTROLS = true;
 PanoJS.CREATE_ZOOM_CONTROLS = true;
-
 PanoJS.MAX_OVER_ZOOM = 2;
 PanoJS.PRE_CACHE_AMOUNT = 3; // 1 - only visible, 2 - more, 3 - even more
 
@@ -607,15 +606,15 @@ PanoJS.prototype.toViewerFromImage = function(p) {
     return p;
 };  
 
-PanoJS.prototype.addViewerMovedListener = function(listener) {          
+PanoJS.prototype.addViewerMovedListener = function(listener) {
     this.viewerMovedListeners.push(listener);
 };
-    
-PanoJS.prototype.addViewerZoomedListener = function(listener) {  
+
+PanoJS.prototype.addViewerZoomedListener = function(listener) {
     this.viewerZoomedListeners.push(listener);
 };
 
-PanoJS.prototype.addViewerResizedListener = function(listener) {      
+PanoJS.prototype.addViewerResizedListener = function(listener) {
     this.viewerResizedListeners.push(listener);
 };  
     
@@ -626,7 +625,14 @@ PanoJS.prototype.notifyViewerZoomed = function() {
     var h = this.surface.clientHeight / scale;  
     
     for (var i = 0; i < this.viewerZoomedListeners.length; i++)
-      this.viewerZoomedListeners[i].viewerZoomed( new PanoJS.ZoomEvent(this.x, this.y, this.zoomLevel, scale, w, h) );
+    {
+
+      if (typeof(this.viewerZoomedListeners[i].viewerZoomed) !='undefined') { // sb it use for callbacks not simple function
+        this.viewerZoomedListeners[i].viewerZoomed( new PanoJS.ZoomEvent(this.x, this.y, this.zoomLevel, scale, w, h) );
+      } else {
+        this.viewerZoomedListeners[i]( new PanoJS.ZoomEvent(this.x, this.y, this.zoomLevel, scale, w, h) );
+      }
+    }
 };
   
 // dima : Notify listeners of a zoom event on the viewer
@@ -634,8 +640,13 @@ PanoJS.prototype.notifyViewerResized = function() {
     var scale = this.currentScale();
     var w = this.surface.clientWidth / scale;
     var h = this.surface.clientHeight / scale;  
-    for (var i = 0; i < this.viewerResizedListeners.length; i++)
-      this.viewerResizedListeners[i].viewerResized( new PanoJS.ResizeEvent(this.x, this.y, w, h) );
+    for (var i = 0; i < this.viewerResizedListeners.length; i++) {
+      if (typeof(this.viewerResizedListeners[i].viewerResized) != 'undefined') {
+        this.viewerResizedListeners[i].viewerResized( new PanoJS.ResizeEvent(this.x, this.y, w, h) );
+      } else {
+        this.viewerResizedListeners[i]( new PanoJS.ResizeEvent(this.x, this.y, w, h) );
+      }
+    }
 };
     
 // Notify listeners of a move event on the viewer.
@@ -645,10 +656,19 @@ PanoJS.prototype.notifyViewerMoved = function(coords) {
     }
         
     for (var i = 0; i < this.viewerMovedListeners.length; i++) {
-      this.viewerMovedListeners[i].viewerMoved( new PanoJS.MoveEvent( this.x + (coords.x - this.mark.x),
+      //sb // if add for callback not simple function
+      if (typeof(this.viewerMovedListeners[i].viewerMoved) != 'undefined') {
+             this.viewerMovedListeners[i].viewerMoved( new PanoJS.MoveEvent( this.x + (coords.x - this.mark.x),
                                                                       this.y + (coords.y - this.mark.y)
                                                                     )
                                               );
+      } else {
+      // sb - if callback simple function
+            this.viewerMovedListeners[i]( new PanoJS.MoveEvent( this.x + (coords.x - this.mark.x),
+                                                                      this.y + (coords.y - this.mark.y)
+                                                                    )
+                                              );
+      }
     }
 };
 
@@ -1230,8 +1250,6 @@ PanoJS.ResizeEvent = function(x, y, width, height) {
   this.width = width;
   this.height = height;
 };
-
-
 
 
 //-------------------------------------------------------
