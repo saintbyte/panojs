@@ -148,6 +148,8 @@ PanoJS.CREATE_CONTROLS = true;
 PanoJS.CREATE_INFO_CONTROLS = true;
 PanoJS.CREATE_OSD_CONTROLS = true;
 PanoJS.CREATE_THUMBNAIL_CONTROLS = (isClientPhone() ? false : true);
+PanoJS.CREATE_MAXIMIZE_CONTROLS = true;
+PanoJS.CREATE_ZOOM_CONTROLS = true;
 
 PanoJS.MAX_OVER_ZOOM = 2;
 PanoJS.PRE_CACHE_AMOUNT = 3; // 1 - only visible, 2 - more, 3 - even more
