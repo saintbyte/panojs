@@ -60,6 +60,7 @@ function PanoJS(viewer, options) {
   // listeners that are notified on a resize event
   this.viewerResizedListeners = [];
   this.viewerClickListeners   = [];
+  this.viewerInitCompleteListeners   = [];
     
   if (typeof viewer == 'string')
     this.viewer = document.getElementById(viewer);
@@ -154,6 +155,7 @@ PanoJS.CREATE_THUMBNAIL_CONTROLS = (isClientPhone() ? false : true);
 PanoJS.CREATE_MAXIMIZE_CONTROLS = true;
 PanoJS.CREATE_ZOOM_CONTROLS = true;
 PanoJS.CREATE_CLICK_CENTER = true;
+PanoJS.WELL_APPEND = true;
 
 PanoJS.MIN_IS_FIT_ZOOM = false; // Its overide PanoJS.MIN_ZOOM_LEVEL
 PanoJS.MAX_OVER_ZOOM = 2;
@@ -239,11 +241,21 @@ PanoJS.prototype.init = function() {
       this.surface.style.cursor = PanoJS.GRAB_MOUSE_CURSOR;
       this.surface.style.zIndex = PanoJS.SURFACE_STYLE_ZINDEX;
     }
-     
+    
+    this.well = this.viewer.getElementsByClassName('well')[0];
     if (!this.well) {
       this.well = document.createElement('div');
       this.well.className = PanoJS.WELL_STYLE_CLASS;
-      this.viewer.appendChild(this.well);
+      if (PanoJS.WELL_APPEND) {   // sb
+        this.viewer.appendChild(this.well);
+      } else { // sb it need if at viewer div has content and that content should overflow well data
+        this.viewer.insertBefore(this.well,this.viewer.firstChild);
+      }
+    } else {
+        if (this.well.className !=PanoJS.WELL_STYLE_CLASS)
+        {
+         this.well.className += PanoJS.WELL_STYLE_CLASS;
+        }
     }
 
 
@@ -294,6 +306,10 @@ PanoJS.prototype.init = function() {
     // notify listners
     this.notifyViewerZoomed();    
     this.notifyViewerMoved();  
+    for (var i = 0; i < this.viewerInitCompleteListeners.length; i++)
+    {
+        this.viewerInitCompleteListeners[i]();
+    }
 };
 
 PanoJS.prototype.viewerDomElement = function() {    
@@ -629,6 +645,9 @@ PanoJS.prototype.addViewerResizedListener = function(listener) {
 };  
 PanoJS.prototype.addViewerClickListener = function(listener) {
     this.viewerClickListeners.push(listener);
+};
+PanoJS.prototype.addViewerInitCompleteListener = function(listener) {
+    this.viewerInitCompleteListeners.push(listener);
 };
 // Notify listeners of a zoom event on the viewer.
 PanoJS.prototype.notifyViewerZoomed = function() {         
