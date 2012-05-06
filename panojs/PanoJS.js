@@ -299,6 +299,7 @@ PanoJS.prototype.init = function() {
     // dima: support for HTML5 touch interfaces like iphone and android
     this.ui_listener.ontouchstart    = callback(this, this.touchStartHandler);
     this.ui_listener.ontouchmove     = callback(this, this.touchMoveHandler);
+    this.ui_listener.ontouchend      = callback(this, this.touchEndHandler);
     this.ui_listener.ongesturestart  = callback(this, this.gestureStartHandler);
     this.ui_listener.ongesturechange = callback(this, this.gestureChangeHandler);
     this.ui_listener.ongestureend    = callback(this, this.gestureEndHandler);        
@@ -1176,7 +1177,7 @@ PanoJS.prototype.keyboardHandler = function(e) {
 PanoJS.prototype.touchStartHandler = function(e) {
   e = e ? e : window.event;
   if (e == null) return false;
-    
+  this.mouse_have_moved = false;
   if (e.touches.length == 1) { // Only deal with one finger
       // prevent anything else happening for this event further
       this.blockPropagation(e);   
@@ -1191,7 +1192,7 @@ PanoJS.prototype.touchStartHandler = function(e) {
 PanoJS.prototype.touchMoveHandler = function(e) {
   e = e ? e : window.event;
   if (e == null) return false;
-  
+  this.mouse_have_moved = true;
   if (e.touches.length==1 && this.touch_start) { // Only deal with one finger
       // prevent anything else happening for this event further
       this.blockPropagation(e);          
@@ -1204,7 +1205,17 @@ PanoJS.prototype.touchMoveHandler = function(e) {
   }
   return false;       
 }
-
+PanoJS.prototype.touchEndHandler = function(e) {
+  e = e ? e : window.event;
+  if (e == null) return false;
+  // sb События по клику выполняются в любом случае
+  if (!this.mouse_have_moved) {
+        for (var i = 0; i < this.viewerClickListeners.length; i++)
+        {
+                this.viewerClickListeners[i]( e );
+        }
+  }
+}
 
 //----------------------------------------------------------------------
 // gesture events
