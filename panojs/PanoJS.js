@@ -155,6 +155,7 @@ PanoJS.CREATE_THUMBNAIL_CONTROLS = (isClientPhone() ? false : true);
 PanoJS.CREATE_MAXIMIZE_CONTROLS = true;
 PanoJS.CREATE_ZOOM_CONTROLS = true;
 PanoJS.CREATE_CLICK_CENTER = true;
+PanoJS.WELL_APPEND = true;
 
 PanoJS.MIN_IS_FIT_ZOOM = false; // Its overide PanoJS.MIN_ZOOM_LEVEL
 PanoJS.MAX_OVER_ZOOM = 2;
@@ -236,15 +237,25 @@ PanoJS.prototype.init = function() {
       this.surface = document.createElement('div');
       this.surface.className = PanoJS.SURFACE_STYLE_CLASS;
       this.surface.id = PanoJS.SURFACE_ID;
-      this.viewer.appendChild(this.surface); 
+      this.viewer.appendChild(this.surface);
       this.surface.style.cursor = PanoJS.GRAB_MOUSE_CURSOR;
       this.surface.style.zIndex = PanoJS.SURFACE_STYLE_ZINDEX;
     }
-     
+    
+    this.well = this.viewer.getElementsByClassName('well')[0];
     if (!this.well) {
       this.well = document.createElement('div');
       this.well.className = PanoJS.WELL_STYLE_CLASS;
-      this.viewer.appendChild(this.well);
+      if (PanoJS.WELL_APPEND) {   // sb
+        this.viewer.appendChild(this.well);
+      } else { // sb it need if at viewer div has content and that content should overflow well data
+        this.viewer.insertBefore(this.well,this.viewer.firstChild);
+      }
+    } else {
+        if (this.well.className !=PanoJS.WELL_STYLE_CLASS)
+        {
+         this.well.className += PanoJS.WELL_STYLE_CLASS;
+        }
     }
 
 
@@ -288,6 +299,7 @@ PanoJS.prototype.init = function() {
     // dima: support for HTML5 touch interfaces like iphone and android
     this.ui_listener.ontouchstart    = callback(this, this.touchStartHandler);
     this.ui_listener.ontouchmove     = callback(this, this.touchMoveHandler);
+    this.ui_listener.ontouchend      = callback(this, this.touchEndHandler);
     this.ui_listener.ongesturestart  = callback(this, this.gestureStartHandler);
     this.ui_listener.ongesturechange = callback(this, this.gestureChangeHandler);
     this.ui_listener.ongestureend    = callback(this, this.gestureEndHandler);        
@@ -928,13 +940,24 @@ PanoJS.prototype.toggleMaximize = function() {
  * offset of the viewer in the browser window (or frame).  This does
  * take into account the scroll offset of the page.
  */
-PanoJS.prototype.resolveCoordinates = function(e) {    
-  if (this.maximized)
-    return { 'x' : e.clientX, 'y' : e.clientY };
+PanoJS.prototype.resolveCoordinates = function(e) {
+
+  if (e.touches) { // SB touch event
+    var e_clientX = e.touches[0].clientX;
+    var e_clientY = e.touches[0].clientY;
+    var e_pageX   = e.touches[0].pageX;
+    var e_pageY   = e.touches[0].pageY;
+  } else {
+    var e_clientX = e.clientX;
+    var e_clientY = e.clientY;
+    var e_pageX = e.pageX;
+    var e_pageY = e.pageY
+  }
+  if (this.maximized) return { 'x' : e_clientX, 'y' : e_clientY };
 
   return {
-    'x' : (e.pageX || (e.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft))) - this.left,
-    'y' : (e.pageY || (e.clientY + (document.documentElement.scrollTop || document.body.scrollTop))) - this.top
+    'x' : (e_pageX || (e_clientX + (document.documentElement.scrollLeft || document.body.scrollLeft))) - this.left,
+    'y' : (e_pageY || (e_clientY + (document.documentElement.scrollTop || document.body.scrollTop))) - this.top
   };
 };
 
@@ -1165,7 +1188,7 @@ PanoJS.prototype.keyboardHandler = function(e) {
 PanoJS.prototype.touchStartHandler = function(e) {
   e = e ? e : window.event;
   if (e == null) return false;
-    
+  this.mouse_have_moved = false;
   if (e.touches.length == 1) { // Only deal with one finger
       // prevent anything else happening for this event further
       this.blockPropagation(e);   
@@ -1180,7 +1203,7 @@ PanoJS.prototype.touchStartHandler = function(e) {
 PanoJS.prototype.touchMoveHandler = function(e) {
   e = e ? e : window.event;
   if (e == null) return false;
-  
+  this.mouse_have_moved = true;
   if (e.touches.length==1 && this.touch_start) { // Only deal with one finger
       // prevent anything else happening for this event further
       this.blockPropagation(e);          
@@ -1193,7 +1216,21 @@ PanoJS.prototype.touchMoveHandler = function(e) {
   }
   return false;       
 }
+PanoJS.prototype.touchEndHandler = function(e) {
+  e = e ? e : window.event;
+  this.blockPropagation(e);
+  if (e == null) return false;
+  // sb События по клику выполняются в любом случае
+  if (e.touches.length == 1) {
 
+        if (!this.mouse_have_moved) {
+                for (var i = 0; i < this.viewerClickListeners.length; i++)
+                {
+                        this.viewerClickListeners[i]( e );
+                }
+        }
+  }
+}
 
 //----------------------------------------------------------------------
 // gesture events
