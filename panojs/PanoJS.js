@@ -297,9 +297,10 @@ PanoJS.prototype.init = function() {
       this.surface.addEventListener ("DOMMouseScroll", callback(this, this.mouseScrollHandler), false);
         
     // dima: support for HTML5 touch interfaces like iphone and android
+    this.touch_t = null; // sb
     this.ui_listener.ontouchstart    = callback(this, this.touchStartHandler);
     this.ui_listener.ontouchmove     = callback(this, this.touchMoveHandler);
-    this.ui_listener.ontouchend      = callback(this, this.touchEndHandler);
+    //this.ui_listener.ontouchend      = callback(this, this.touchEndHandler);
     this.ui_listener.ongesturestart  = callback(this, this.gestureStartHandler);
     this.ui_listener.ongesturechange = callback(this, this.gestureChangeHandler);
     this.ui_listener.ongestureend    = callback(this, this.gestureEndHandler);        
@@ -1188,14 +1189,15 @@ PanoJS.prototype.keyboardHandler = function(e) {
 PanoJS.prototype.touchStartHandler = function(e) {
   e = e ? e : window.event;
   if (e == null) return false;
-  this.mouse_have_moved = false;
   if (e.touches.length == 1) { // Only deal with one finger
       // prevent anything else happening for this event further
       this.blockPropagation(e);   
       
       // actully store the initial touch move position
       var touch = e.touches[0]; // Get the information for finger #1
-      this.touch_start = {'x': touch.clientX,'y': touch.clientY}; 
+      this.touch_start = {'x': touch.clientX,'y': touch.clientY};
+      var that = this;
+      this.touch_t = window.setTimeout( callback(that, that.touchClickHandler,e),200); // sb если не двигаем - значит кликнули
   }
   return false;       
 }
@@ -1203,7 +1205,7 @@ PanoJS.prototype.touchStartHandler = function(e) {
 PanoJS.prototype.touchMoveHandler = function(e) {
   e = e ? e : window.event;
   if (e == null) return false;
-  this.mouse_have_moved = true;
+  window.clearTimeout(this.touch_t);      // SB отменяем - потому что двигаем
   if (e.touches.length==1 && this.touch_start) { // Only deal with one finger
       // prevent anything else happening for this event further
       this.blockPropagation(e);          
@@ -1216,19 +1218,17 @@ PanoJS.prototype.touchMoveHandler = function(e) {
   }
   return false;       
 }
-PanoJS.prototype.touchEndHandler = function(e) {
+PanoJS.prototype.touchEndHandler = function(e) { // sb Empty function for future, may need
+}
+PanoJS.prototype.touchClickHandler = function(e) {
   e = e ? e : window.event;
   this.blockPropagation(e);
+
   if (e == null) return false;
   // sb События по клику выполняются в любом случае
-  if (e.touches.length == 1) {
-
-        if (!this.mouse_have_moved) {
-                for (var i = 0; i < this.viewerClickListeners.length; i++)
-                {
-                        this.viewerClickListeners[i]( e );
-                }
-        }
+  for (var i = 0; i < this.viewerClickListeners.length; i++)
+  {
+        this.viewerClickListeners[i]( e );
   }
 }
 
