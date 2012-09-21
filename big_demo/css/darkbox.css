@@ -1,0 +1,27 @@
+.opacity50{
+filter:progid:DXImageTransform.Microsoft.Alpha(opacity=50);
+-moz-opacity:.5;
+-khtml-opacity:.5;
+opacity:.5;
+}
+
+.darkbox{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+
+background-color:#000;
+z-index:253;
+}
+.darkbox_i
+{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+z-index:254;
+background-image: url('../i/ajax-loader.gif');
+background-position: center center;
+background-repeat: no-repeat;
+}

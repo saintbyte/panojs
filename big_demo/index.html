@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>123</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <script type="text/javascript" src="data/data.js"></script>
+        <script type="text/javascript" src="data/zoom4.js"></script>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="css/style.css" />
+        <script src="js/jquery.min.js"></script>
+        <!-- JqueryMobile -->
+        <link rel="stylesheet" href="css/jquery.mobile.min.css" /> 
+        <script src="js/jquery.mobile.js"></script>
+        <!-- /JqueryMobile -->
+        <script type="text/javascript" src="js/iscroll.js"></script>
+        <!-- PANOjs3 -->
+        <link rel="stylesheet" href="css/panojs.css" />
+        <script type="text/javascript" src="js/panojs3/utils.js"></script>
+        <script type="text/javascript" src="js/panojs3/PanoJS.js"></script>
+        <script type="text/javascript" src="js/panojs3/controls.js"></script>
+        <script type="text/javascript" src="js/panojs3/pyramid_imgcnv.js"></script>
+        <script type="text/javascript" src="js/panojs3/control_thumbnail.js"></script>
+        <script type="text/javascript" src="js/panojs3/control_info.js"></script>
+        <script type="text/javascript" src="js/panojs3/control_svg.js"></script>
+        <!-- /PANOjs3 -->
+        <!-- DarkBox -->
+        <link rel="stylesheet" href="css/darkbox.css" />
+        <script type="text/javascript" src="js/darkbox.js"></script>
+        <!-- /DarkBox -->
+        <!-- DarkBox -->
+        <link rel="stylesheet" href="css/w.css" />
+        <!-- script type="text/javascript" src="js/w.js"></script-->
+        <!-- /DarkBox -->
+
+        <script type="text/javascript" charset="utf-8">
+        var overlay_html = ['','','','','',''];
+        var test_text ='Водопады всегда обладали неведомой силой притяжения, покоряя нас своей неповторимостью. <a href="http://www.youtube.com/watch?v=NFFqQgLsjsU">You Test Video</a>Они всегда разные, хотя и подразделяются на йосемитские и ниагарские, различаясь по своей высоте и ширине падения струи.<a href="http://www.youtube.com/watch?v=NFFqQgLsjsU">You Test Video</a> Шум их воды разносится в различных уголках необъятной страны. Не исключение и горная Башкирия, славящаяся своим уникальным водопадом Атыш, <a href="http://www.youtube.com/watch?v=NFFqQgLsjsU">You Test Video</a>что в переводе с башкирского означает «выстрел». И это, действительно так: водопад, <a href="http://www.youtube.com/watch?v=NFFqQgLsjsU">You Test Video</a>Fyz словно пуля, вылетает из скалы, пробивая ее насквозь.Граница Белорецкого и Архангельского районов Башкирии, правый берег течения реки Лемзы -  именно здесь и надодится уникальный водопад. ';
+        //========================================================================
+        function W()
+        {
+         this.width = 500;
+         this.height = 450;
+         this.max_title_len = 45;
+        }
+        
+        W.prototype.init = function()
+        {
+                var darkbox = $('#darkbox');
+                if (darkbox) darkbox.html('');
+                var dbox = $('<div id="w" class="w"></div>');
+                var left = (1024/2) - (this.width / 2);
+                var top = (768/2) - (this.height / 2);
+                dbox.css('top',top+'px').css('left',left+'px').width(this.width).height(this.height);
+                this.title = $('<div class="title"></div>');
+                this.close_butt = $('<div class="close">Закрыть</div>');
+                dbox.append(this.title);
+                dbox.append(this.close_butt);
+                dbox.append($('<div id="wcontentWrapper" class="content"><div id="wcontentScroller"></div></div>'));
+                var that = this;
+                this.close_butt.click(that.close);
+                $(document.body).append(dbox);
+                this.iscroll = new iScroll('wcontentWrapper',{fixedScrollbar: true,bounce: false,hideScrollbar: true});
+
+        }
+        W.prototype.close = function()
+        {
+                var w =$('#w');
+                if (w) { w.remove(); }
+                var darkbox = $('#darkbox');
+                if (darkbox) darkbox.remove();
+        }
+        W.prototype.setTitle = function(title)
+        {
+        if (title.length > this.max_title_len) { title = title.substr(0,this.max_title_len); title+='...'; }
+        this.title.html('&nbsp;'+title);
+        }
+        W.prototype.setContent = function(s)
+        {
+
+         $('#wcontentScroller').html(s+'<br /><br />');
+         this.iscroll.refresh();
+        }
+        //========================================================================
+        function debug(s) {  if (window.console) {window.console.log(s);} }
+        var viewerBean = null;
+        var viewer_overlay = null;
+        var viewer_overlay_ch = null;
+        /*
+        var iwidth = 2574;
+        var iheight = 3114;
+        */
+        var iwidth = 3125;
+        var iheight = 2139;
+        PanoJS.MSG_BEYOND_MIN_ZOOM = null;
+        PanoJS.MSG_BEYOND_MAX_ZOOM = null;
+        var actions_areas = {};
+        var zoom_2 = [{"top":0,"left":15,"height":120,"width":250,"title":"1"},{"top":0,"left":274,"height":120,"width":250,"title":"2"},{"top":132,"left":14,"height":230,"width":250,"title":"[Пусто]"},{"top":384,"left":228,"height":147,"width":280,"title":"[Пусто]"},{"top":139,"left":271,"height":220,"width":500,"title":"och2"},{"top":0,"left":537,"height":120,"width":220,"title":"[Пусто]"}];
+        var polygons_data = [
+                            {points:[10,10,
+                                     30,50,
+                                     10,50],
+                                     name:'1'
+                            },
+                            {points:[271,891,227,996,203,1097,206,1181,218,1282,252,1356,288,1434,352,1505,436,1559,500,1588,561,1612,751,1640,855,1630,992,1590,1124,1502,1237,1375,1272,1137,1177,909,1096,789,1010,728,916,681,798,654,603,641,496,679,413,704,340,787,305,825,301,837],
+                                     name:'1'
+                            },
+                            ];
+        function gen_from_data(data)
+        {
+                var shtml = '';
+                for(var i=0;i<data.length;i++)
+                {
+                shtml +='<div class="overlay_item" style="top:'+data[i].top+'px;left:'+data[i].left+'px;width:'+data[i].width+'px;height:'+data[i].height+'px"></div>';
+                }
+                return shtml;
+        }
+        function drawPolygon(toCtx,data,line_clr,fill_clr)
+        {
+        toCtx.fillStyle = line_clr;
+        toCtx.strokeStyle = line_clr;
+        toCtx.moveTo(data[0], data[1]);
+        toCtx.beginPath();
+        for(var i=3;i<data.length-1;i +=2) {
+                toCtx.lineTo( data[i], data[i+1]);
+                //debug(i);
+                //debug(i+1);
+                //debug(data[i]);
+                //debug(data[i+1]);
+        }
+        toCtx.closePath();
+        toCtx.stroke();
+        toCtx.fillStyle = fill_clr;
+        toCtx.fill();
+        }
+        function setTitle(tl)
+        {
+          $('#title1').html(tl);
+        }
+        function render(onObj)
+        {
+                debug(onObj);
+                debug(onObj.currentScale());
+
+                var c=document.getElementById("cnv");
+                var ctx=c.getContext("2d");
+                ctx.strokeStyle = "#000000";
+                ctx.fillStyle = "#FFFF00";
+                ctx.beginPath();
+                ctx.arc(100,100,50,0,Math.PI*2,true);
+                ctx.closePath();
+                ctx.stroke();
+                ctx.fill();
+                for(var i=0;i<polygons_data.length;i++) {
+                        drawPolygon(ctx,polygons_data[i].points,'#00FF00','#FF0000');
+                }
+
+        }
+        function makeOnImageDiv(viewer_o,viewer)
+        {
+           viewer_o.css('top',viewer.y+'px');
+           viewer_o.css('left',viewer.x+'px');
+           var wh = viewer.currentImageSize();
+           viewer_o.width(wh.width);
+           viewer_o.height(wh.height);
+        }
+        function find_action_area(viewer,x,y,z)
+        {
+           debug('find_action_area');
+           debug('---');
+          // var wxy = $(viewer).position();
+           //debug(wxy);
+           var yy = y-viewer.y;
+           var xx = x-viewer.x;
+           debug('---');
+           if (typeof(actions_areas[z]) != 'undefined')
+           {
+                var ac = actions_areas[z];
+                for(var i=0; i < ac.length; i++)
+                {
+                 if (ac[i].top < yy ) {
+                  if (ac[i].bottom > yy ) {
+                   if (ac[i].left < xx ) {
+                    if (ac[i].right > xx ) {
+                     debug('Find');
+
+                     if (z == 2)
+                     {
+                        var center_y = viewer.y + ac[i].top + ( (ac[i].bottom - ac[i].top) / 2 );
+                        var center_x = viewer.x + ac[i].left + ( (ac[i].right - ac[i].left) / 2 );
+                        viewer.recenter({x:center_x,y:center_y},false,true);
+                        viewer.zoom(2);
+                        //alert(ac[i].title);
+                        
+                     }
+                     else if (z == 4)
+                     {
+                        show_firm(ac[i].title);
+                     }
+                     //ac[i].func();
+                     break;
+                   }
+                  }
+                 }
+                 }
+                } // for
+           } else {
+                return false;
+           }
+        }
+        function gen_actions_areas(level,data)
+        {
+                //actions_areas
+                debug('gen_actions_areas');
+                debug(level);
+                debug(data);
+                debug('---');
+                actions_areas[level] = [];
+                for(var i=0; i<data.length; i++)
+                {
+                        var a = {};
+                        a.top = data[i].top;
+                        a.left = data[i].left;
+                        a.bottom = data[i].top  + data[i].height ;
+                        a.right  = data[i].left + data[i].width ;
+                        
+                        if (data[i].title) {
+                                var s = data[i].title+' ';
+                                a.title = data[i].title;
+                        } else {
+                                var s = 'EMPTY ';
+                        }
+                        if (data[i].id) {
+                          s +=data[i].id;
+                          a.id = data[i].id;
+                        } else {
+                          s+=' ID_EMPTY';
+                        }
+                        a.func = function() { alert(s); };
+                        
+                        actions_areas[level].push(a);
+                }
+        }
+        //----------------------------------------------------------
+        function show_firm(id)
+        {
+           showdarkbox();
+           id = parseInt(id,10);
+           for(var i=0;i<main_data.length;i++)
+           {
+                if (id == main_data[i].id) {
+                   var ww = new W()
+                   ww.init();
+                   ww.setTitle('Тестовое название '+main_data[i].name);
+                   ww.setContent(test_text+'<br /><br /><br />'+test_text+'<br /><br />'+test_text+'<br /><br />'+test_text+'<br /><br />'+test_text+'<br /><br />'+test_text+'<br /><br />'+test_text);
+                }
+           }
+        }
+        //----------------------------------------------------------
+        function firms()
+        {
+        showdarkbox();
+        $('.footer_toolbar .button').removeClass('active_button');
+        $('#firms').addClass('active_button');
+
+        var shtml = '<ol class="firms_list w100" id="firms_ol">';
+        for(var i=0;i<main_data.length;i++)
+        {
+                shtml += '<li data-id="'+main_data[i].id+'">Тестовое название '+main_data[i].name+'<br />';
+                //shtml += '<div  class="grey_gr smbutt">Инфо</div><div class="show grey_gr smbutt">Показать</div><div  class="grey_gr smbutt"><div class="infav"></div></div>'
+                shtml += '</li>';
+                 //
+        }
+        shtml += '</ol>';
+        
+        var ww = new W()
+        ww.init();
+        ww.setTitle('Все фирмы');
+        ww.setContent(shtml);
+        }
+        //----------------------------------------------------------
+        function vlast()
+        {
+                $('.footer_toolbar .button').removeClass('active_button');
+                $('#vlast').addClass('active_button');
+                overlay_html = ['',
+                                '',
+                                '<div class="overlay_item vlast_item filter_item" style="top:0px;left:15px;width:250px;height:120px"></div>',
+                                '',
+                                '<div class="overlay_item vlast_item filter_item" style="top:241px;left:552px;width:80px;height:50px"></div><div class="overlay_item vlast_item filter_item" style="top:173px;left:553px;width:70px;height:60px"></div>',''];
+                update_overlay(viewerBean.zoomLevel);
+                debug(overlay_html[viewerBean.zoomLevel]);
+        }
+        //----------------------------------------------------------
+        function himim()
+        {
+                $('.footer_toolbar .button').removeClass('active_button');
+                overlay_html = ['',
+                                '',
+                                '<div class="overlay_item vlast_item filter_item" style="top:0px;left:15px;width:250px;height:120px"></div>',
+                                '',
+                                '<div class="overlay_item filter_item" style="top:345px;left:667px;width:60px;height:40px"></div><div class="overlay_item filter_item" style="top:171px;left:752px;width:90px;height:120px"></div>',
+                                ''];
+                update_overlay(viewerBean.zoomLevel);
+                $('#himim').addClass('active_button');
+        }
+                //----------------------------------------------------------
+        function all()
+        {
+                $('.footer_toolbar .button').removeClass('active_button');
+                $('#all').addClass('active_button');
+                overlay_html = ['','','','','',''];
+                update_overlay(viewerBean.zoomLevel);
+                window.setTimeout(function() { $('#all').removeClass('active_button') },500);
+        }
+        //----------------------------------------------------------
+        function update_overlay(z)
+        {
+                if (z == 2) {
+                viewer_overlay.html(gen_from_data(zoom_2));
+                } else if(z == 4)
+                {
+                viewer_overlay.html(gen_from_data(zoom_4));
+                }
+                else {
+                        viewer_overlay.html('');
+                }
+                viewer_overlay.html(viewer_overlay.html()+overlay_html[z]);
+        }
+        //----------------------------------------------------------
+        function createViewer( dom_id, url, prefix, w, h ) {
+                var viewer = null;
+                if (viewer) return;
+
+                var MY_URL      = url;
+                var MY_PREFIX   = prefix;
+                var MY_TILESIZE = 256;
+                var MY_WIDTH    = w;
+                var MY_HEIGHT   = h;
+                var myPyramid = new ImgcnvPyramid( MY_WIDTH, MY_HEIGHT, MY_TILESIZE);
+
+                var myProvider = new PanoJS.TileUrlProvider('','','');
+                        myProvider.assembleUrl = function(xIndex, yIndex, zoom) {
+                        return MY_URL + '' + MY_PREFIX + myPyramid.tile_filename( zoom, xIndex, yIndex );
+                }
+                debug('_________________________');
+                viewer = new PanoJS(dom_id, {
+                        tileUrlProvider : myProvider,
+                        tileSize        : myPyramid.tilesize,
+                        maxZoom         : myPyramid.getMaxLevel(),
+                        imageWidth      : myPyramid.width,
+                        imageHeight     : myPyramid.height,
+                        blankTile       : 'i/blank.gif',
+                        loadingTile     : 'i/blank.gif'
+                });
+
+                debug(viewer);
+                debug('_________________________');
+    //Ext.EventManager.addListener( window, 'resize', callback(viewer, viewer.resize) );
+                PanoJS.CREATE_CONTROLS = true;
+                PanoJS.CREATE_INFO_CONTROLS = false;
+                PanoJS.CREATE_OSD_CONTROLS = true ;
+                PanoJS.CREATE_THUMBNAIL_CONTROLS = false;
+                PanoJS.CREATE_MAXIMIZE_CONTROLS = false;
+                PanoJS.CREATE_ZOOM_CONTROLS = true;
+                PanoJS.USE_KEYBOARD =  true;
+                PanoJS.CREATE_CLICK_CENTER = false;
+                PanoJS.MAX_OVER_ZOOM = 0;
+                PanoJS.MIN_IS_FIT_ZOOM = true;
+                PanoJS.CONTROL_IMAGE_ZOOMIN   = "i/panojs/32px_plus.png";
+                PanoJS.CONTROL_IMAGE_ZOOM11   = "i/panojs/32px_11.png";
+                PanoJS.CONTROL_IMAGE_ZOOMOUT  = "i/panojs/32px_minus.png";
+                PanoJS.CONTROL_IMAGE_MAXIMIZE = "i/panojs/32px_show.png";
+
+                PanoJS.CONTROL_IMAGE_ZOOMIN_TOUCH   = "i/panojs/64px_plus.png";
+                PanoJS.CONTROL_IMAGE_ZOOM11_TOUCH   = "i/panojs/64px_11.png";
+                PanoJS.CONTROL_IMAGE_ZOOMOUT_TOUCH  = "i/panojs/64px_minus.png";
+                PanoJS.CONTROL_IMAGE_MAXIMIZE_TOUCH = "i/panojs/64px_show.png";
+                PanoJS.WELL_APPEND = false;
+                //--------------------------------------------------
+                viewer.addViewerMovedListener(function(c){
+                        debug(c);
+                        //render(viewer);
+                        viewer_overlay.css('top',c.y+'px');
+                        viewer_overlay.css('left',c.x+'px');
+                });
+                viewer.addViewerZoomedListener(function(z) {
+                debug(z);
+                //render(viewer);
+                viewer_overlay.css('top',z.y+'px');
+                viewer_overlay.css('left',z.x+'px');
+                var wh = viewer.currentImageSize();
+                viewer_overlay.width(wh.width);
+                viewer_overlay.height(wh.height);
+                //viewer_overlay_ch.css('-webkit-transform','scale('+z.scale+')');
+                //--------------------------------------
+                update_overlay(z.level);
+                //---------------------------------------
+                        $('#result').html('Маcштаб: '+ (Math.ceil(z.scale * 100 )).toString() +'%');
+
+                });
+                viewer.addViewerResizedListener(function(r) {
+                debug(r);
+                //render();
+                viewer_overlay.css('top',r.y+'px');
+                viewer_overlay.css('left',r.x+'px');
+                viewer_overlay.width(r.width);
+                viewer_overlay.height(r.height);
+                });
+                viewer.addViewerClickListener(function(e) {
+                        debug(e);
+                        var cr = viewer.resolveCoordinates(e);
+                        find_action_area(viewer,cr.x,cr.y, viewer.zoomLevel);
+                        
+
+                });
+                viewer.addViewerInitCompleteListener(function() {
+                viewer_overlay_ch.width(w);
+                viewer_overlay_ch.height(h);
+                //viewer_overlay_ch.css('-webkit-transform','scale('+viewer.currentScale()+')');
+                });
+                //--------------------------------------------------
+                viewer.init();
+                return viewer;
+        };
+
+            $(document).ready(function() {
+                viewer_overlay = $('#viewer_overlay');
+                viewer_overlay_ch = viewer_overlay.children();
+                gen_actions_areas(2,zoom_2);
+                gen_actions_areas(4,zoom_4);
+                viewerBean = createViewer('viewer', '','i/b1/b1_', iwidth,iheight);
+                debug(viewerBean);
+                
+                setTitle('Title');
+                $('#all').click(all);
+                $('#firms').click(firms);
+                $('#vlast').click(vlast);
+                $('#himim').click(himim);
+            });
+            
+            $(document).bind('mobileinit',function(){
+
+            });
+    </script>
+</head>
+<body >
+
+    <div id="page">
+        <div id="content">
+            <div class="backbutton hide" id="backbutton">
+                <div>
+                    <span></span>
+                </div>
+                <p>Назад</p>
+                <p></p>
+            </div>
+            <div class="donebutton hide" id="donebutton">
+                <p>Готово</p>
+            </div>
+            <header class="header_gradient first_header" id="title1">1</header>
+            <article id="contentWrapper" class="contentBg dashedbg" >
+                <div id="contentScroller">
+
+                        <div id="viewer" class="viewer">
+                                <div id="viewer_overlay" class="viewer_overlay opacity50" style="">
+                                                                <!--
+                                        <canvas id="cnv" class="viewer_overlay_cnv" width="1024" height="500"></canvas>
+                                        <div id="qwe" class="viewer_overlay_ch" > 123   123 </div>
+                                                                -->
+                                </div>
+                                
+                        </div>
+
+                </div>
+            </article>
+            <div class="footer_toolbar black_gr">
+            <div class="button" id="firms"  style="background-image: url('i/firms.png');">Фирмы</div>
+            <div class="button" id="all" style="background-image: url('i/all.png');">Все</div>
+            <div class="button" id="vlast" style="background-image: url('i/vlast.png');">Власть</div>
+            <div class="button" id="himim" style="background-image: url('i/himim.png');width: 150px"><div>Химическая промышленость</div></div>
+            <div class="button" style="width: 150px"> <div id="result"></div></div>
+           
+           </div>
+        </div>
+    </div>
+</body>
+</html>
